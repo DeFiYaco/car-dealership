@@ -40,5 +40,15 @@
     margin-top: 2%;
 }
 
+.formField{
+    width: 50%;
+    display:inline-block;
+    min-width: 15%;
+    height: 25px;
+    margin-top: 2%;
+    margin-left: 1%;
+  }
 
-
+.dataBox{
+    margin: 2%;
+}

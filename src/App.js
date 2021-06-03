@@ -20,7 +20,47 @@ class App extends React.Component {
         this.onClickSearch = this.onClickSearch.bind(this);
   }
 
+  /**
+  * Fetch cars from REST API
+  */
+  async getCars(){
 
+   var link = 'https://f4vltvpeve.execute-api.us-east-1.amazonaws.com/dev/listcars/'
+    if(this.state.search !== '' && this.state.colorSearch !== ''){
+      link = 'https://f4vltvpeve.execute-api.us-east-1.amazonaws.com/dev/cars?Color='+this.state.colorSearch+'&Model='+this.state.search
+    }
+    const response = await fetch(link);
+    const data = await response.json();
+    if(data==null)
+      return
+      
+    //1-Clear array
+    var aux = [];
+    var aux2 = [];
+    var colorsList = []
+    
+    {data.map(car => 
+      {
+        if(this.state.search == ''){
+          aux2.push(car.model)
+          if(!colorsList.includes(car.colors))
+            colorsList.push(car.colors)
+        }
+        aux.push(car)
+      } 
+    )}
+    if(this.state.search == '')
+      this.setState({cars : aux, search : '', colorSearch : '', brandOptions : aux2, colorsAvailable : colorsList});
+    else
+    this.setState({cars : aux, search : '', colorSearch : ''});
+  }
+
+
+
+/**
+ * Fetch cars from localfile
+ * Don't use this function. Only for initial tests.
+ */
  getCarsFromRestAPI(){
     //1-Clear array
     var aux = [];
@@ -30,7 +70,7 @@ class App extends React.Component {
     option = option.toLocaleLowerCase();
     {CarInfo.cars.map(car => 
       {
-        aux2.push(car.brand)
+        aux2.push(car.model)
         if(car.brand.toLocaleLowerCase().includes(option) || car.model.toLocaleLowerCase().includes(option) ){
           aux.push(car)
         }
@@ -40,12 +80,14 @@ class App extends React.Component {
   }
 
   componentWillMount(){
-    this.getCarsFromRestAPI();
+    //this.getCarsFromRestAPI();
+    this.getCars();
   }
 
   onClickSearch(event){
     event.preventDefault();
-    this.getCarsFromRestAPI();
+    //this.getCarsFromRestAPI();
+    this.getCars();
   }
 
   handleChangeBrand(e){
@@ -60,24 +102,25 @@ class App extends React.Component {
 
       var list = []
       for(var i=0; i< this.state.cars.length; i++){
-        list.push(<Car key ={this.state.cars[i].id}
+        list.push(<Car key ={this.state.cars[i].ID}
           carName={this.state.cars[i].brand}
           carModel={this.state.cars[i].model}
           carDesc={this.state.cars[i].otherInfo}
           carImageUrl={this.state.cars[i].imgUrl}
           carPrice={this.state.cars[i].price}
-          carColors={this.state.cars[i].colors}/>)
+          carColors={this.state.cars[i].colors}
+          id={this.state.cars[i].ID}
+          />)
       }
 
-      //Brands for search options
+      // Brands for search options
       var brands = this.state.brandOptions.map(b => ({
         "value" : b,
         "label" : b
       }))
       
-      //Colors for search options
-      var colors = ["Red", "Black", "White", "Yellow"]
-      const colorOptions = colors.map(c => ({
+      // Colors for search options
+      const colorOptions = this.state.colorsAvailable.map(c => ({
         "value" : c,
         "label" : c
       }))
