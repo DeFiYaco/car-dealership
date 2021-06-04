@@ -1,6 +1,5 @@
 import * as  React from 'react';
 import style from './car.module.css';
-import Select from 'react-select';
 import Popup from './Popup';
 import * as emailjs from "emailjs-com";
 
@@ -68,48 +67,54 @@ class Car extends React.Component {
       return;
 
     // Send order confimation email
-    //this.sendOrderConfirmationEmail();
+    this.sendOrderConfirmationEmail();
 
-    // Reserve Car and get VIN number 
-    //Call Maria API
-    //this.getVinNumber();
-
-    // Send VIN number in order to get a licence plate
-    this.sendVinNumber();
-
-    // Get licence plate 
-    //this.getLicencePlate();
-
-    // Send an email with Order Confirmation ID
-    //this.sendOrderDetails();
-
-    this.setState({clientName : "", clientEmail : "", clientAdress : "", isOpen : !this.state.isOpen})
+    this.orderCar();
   }
 
 
-  async getVinNumber(){
-    var link = 'https://f4vltvpeve.execute-api.us-east-1.amazonaws.com/dev/vin?Color=White&Model=Juke';
+  async orderCar(){
+    // Reserve Car and get VIN number 
+    var link = 'https://f4vltvpeve.execute-api.us-east-1.amazonaws.com/dev/vin?Color='+ this.state.carColors +'&Model='+ this.state.carModel
     const response = await fetch(link);
     const data = await response.json();
     this.setState({vinNumber : data});
-    console.log('Getting VIN number');
-  }
+    //console.log('Getting VIN number:  ' + data);
 
-  async sendVinNumber(){
+    // Send VIN number in order to get a licence plate
     var link = 'https://iqtovnhiy3.execute-api.us-east-1.amazonaws.com/prod?vin=' + this.state.vinNumber
-    const response = await fetch(link, {
+    const response1 = await fetch(link, {
       method: 'POST',
     });
-    console.log('Sending VIN number');
+    //console.log('Sending VIN number: ' + this.state.vinNumber);
+
+    // Get licence plate 
+    var link = 'https://iqtovnhiy3.execute-api.us-east-1.amazonaws.com/prod?vin=' + this.state.vinNumber;
+    const response2 = await fetch(link);
+    const data2 = await response2.json();
+    this.setState({licencePlate : data2.licensePlate})
+    console.log('Getting licence plate' + data2.licensePlate);
+
+    let confLinkToCostumer = 'https://17emo3rvm8.execute-api.us-east-1.amazonaws.com/prod/confirm?vin=' + this.state.vinNumber
+    let qrCodeURL = 'http://api.qrserver.com/v1/create-qr-code/?data=' + confLinkToCostumer + '&size=400x400'
+
+    // Save Order Data into the database
+    var link = 'https://17emo3rvm8.execute-api.us-east-1.amazonaws.com/prod/registerorder?vin=' + this.state.vinNumber +
+    '&licence_plate=' + this.state.licencePlate +
+     '&ca=' + this.state.clientAdress +
+      '&cm=' + this.state.clientEmail +
+       '&cn=' + this.state.clientName +
+        '&qr=' + qrCodeURL;
+   const response3 = await fetch(link);
+  // console.log('Registering Order');
+
+   // Send an email with Order Confirmation ID
+   this.sendOrderDetails();
+
+   this.setState({clientName : "", clientEmail : "", clientAdress : "", isOpen : !this.state.isOpen})
   }
 
-  async getLicencePlate(vin){
-    var link = 'https://iqtovnhiy3.execute-api.us-east-1.amazonaws.com/prod?vin=' + this.state.vinNumber;
-    const response = await fetch(link);
-    const data = await response.json();
-    this.setState({licencePlate : data.licensePlate})
-    console.log('Getting licence plate');
-  }
+
 
   /**
    * Send Order confirmation email to the client
@@ -131,18 +136,26 @@ class Car extends React.Component {
     );
   }
 
+
   /**
    * Send Order details with with the car VIN, plate number and confirmation QR code
    */
-  sendOrderDetails(licencePlate, carVin, qrCode){
+  sendOrderDetails(){
+
+    //Get QR_Code url
+    //let qrCodeURL = document.getElementById(this.state.carColors+this.state.carModel)
+     // .toDataURL("image/png");
+    let confLinkToCostumer = 'https://17emo3rvm8.execute-api.us-east-1.amazonaws.com/prod/confirm?vin=' + this.state.vinNumber
+    let qrCodeURL = 'http://api.qrserver.com/v1/create-qr-code/?data=' + confLinkToCostumer + '&size=400x400'
+
     console.log(this.state.clientEmail)
     var data = {
       to_email : this.state.clientEmail,
       to_name : this.state.clientName,
       car_name : "Car Model: " + this.state.carName + ' ' + this.state.carModel,
-      qr_code_url : qrCode,
-      car_licence_plate : "Licence Plate: " + licencePlate,
-      car_vin : "VIN Number: " + carVin,
+      car_licence_plate : "Licence Plate: " + this.state.licencePlate,
+      car_vin : "VIN Number: " + this.state.vinNumber,
+      qr_code: qrCodeURL
     };
 
     emailjs.send('service_ES_cars', 'order_details', data, 'user_xQswXKFreeOGIVejwz9wH').then(
@@ -154,6 +167,7 @@ class Car extends React.Component {
       }
     );
   }
+
 
   render(){
       return (
@@ -171,6 +185,8 @@ class Car extends React.Component {
                 <button className={style.select_buy_button} type="submit"> Buy </button>
               </form>
             </div> 
+
+            
 
             {this.state.isOpen && <Popup
               content={<>
@@ -203,6 +219,7 @@ class Car extends React.Component {
               </>}
              handleClose={this.togglePopup}
             />}
+
 
         </div>
       )

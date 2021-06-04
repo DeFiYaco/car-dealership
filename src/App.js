@@ -70,9 +70,11 @@ class App extends React.Component {
     option = option.toLocaleLowerCase();
     {CarInfo.cars.map(car => 
       {
-        aux2.push(car.model)
+        if(car.quantity > 0)
+          aux2.push(car.model)
         if(car.brand.toLocaleLowerCase().includes(option) || car.model.toLocaleLowerCase().includes(option) ){
-          aux.push(car)
+          if(car.quantity > 0)
+            aux.push(car)
         }
       } 
     )}
